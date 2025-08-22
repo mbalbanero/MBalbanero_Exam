@@ -1,0 +1,95 @@
+﻿@{
+    ViewData["Title"] = "Ethereum Wallet (ethers.js)";
+}
+
+<div class="container mt-5">
+    <h2>Ethereum Wallet Viewer</h2>
+    <button id="connectBtn" class="btn btn-primary">Connect Wallet</button>
+
+    <div id="walletInfo" class="mt-4" style="display:none;">
+        <p><strong>Wallet Address:</strong> <span id="walletAddress"></span></p>
+        <p><strong>Balance:</strong> <span id="walletBalance"></span> ETH</p>
+
+        <h4 id="txHeader"></h4>
+        <ul id="txList" class="list-group"></ul>
+    </div>
+
+    <div id="errorMsg" class="alert alert-danger mt-3" style="display:none;"></div>
+</div>
+
+<!-- ✅ Load ethers.js -->
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+
+<script>
+    let provider;
+    let signer;
+    let userAddress;
+
+    const connectBtn = document.getElementById("connectBtn");
+    const walletInfo = document.getElementById("walletInfo");
+    const walletAddress = document.getElementById("walletAddress");
+    const walletBalance = document.getElementById("walletBalance");
+    const txList = document.getElementById("txList");
+    const txHeader = document.getElementById("txHeader");
+    const errorMsg = document.getElementById("errorMsg");
+
+    connectBtn.addEventListener("click", async () => {
+        try {
+            if (window.ethereum) {
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                signer = provider.getSigner();
+                userAddress = await signer.getAddress();
+                walletAddress.innerText = userAddress;
+                walletInfo.style.display = "block";
+
+                // ✅ Fetch ETH balance
+                const balance = await provider.getBalance(userAddress);
+                walletBalance.innerText = ethers.utils.formatEther(balance);
+
+                // ✅ Fetch last 10 transactions
+                fetchTransactions(userAddress);
+            } else {
+                showError("MetaMask (or any Web3 wallet) is not installed.");
+            }
+        } catch (err) {
+            connectBtn.innerHTML = "Connect Wallet";
+            showError("Connection failed: " + err.message);
+        }
+    });
+
+    async function fetchTransactions(address) {
+        try {
+            // Replace with your Etherscan API key
+            const apiKey = '@ViewData["EtherscanApiKey"]';
+            const url = `https://api.etherscan.io/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=1&offset=10&sort=desc&apikey=${apiKey}`;
+
+            const res = await fetch(url);
+            const data = await res.json();
+            console.log(data);
+            if (data.result.length > 0) {
+                txHeader.innerHTML = "Last 10 Transactions";
+                txList.innerHTML = "";
+                data.result.forEach(tx => {
+                    const li = document.createElement("li");
+                    li.className = "list-group-item";
+                    li.innerText = `Hash: ${tx.hash.substring(0, 10)}... | Value: ${ethers.utils.formatEther(tx.value)} ETH`;
+                    txList.appendChild(li);
+                });
+            }
+            else if (data.result.length == 0){
+                txHeader.innerHTML = data.message;
+            }
+            else {
+                showError("Could not fetch transactions (check API key).");
+            }
+        } catch (err) {
+            showError("Transaction fetch failed: " + err.message);
+        }
+    }
+
+    function showError(message) {
+        errorMsg.style.display = "block";
+        errorMsg.innerText = message;
+    }
+</script>
