@@ -38,6 +38,16 @@ Before running the project, make sure you have installed:
      git clone https://github.com/your-username/your-repo.git
      cd your-repo
      ```
+2. **appsettings.json**
+   - Open `appsettings.json`.
+   - Locate the section for your API key and **replace the value with your actual API key** from [Etherscan](https://etherscan.io):
+     ```json
+     {
+       "YourApiService": {
+         "ApiKey": "YOUR_ACTUAL_API_KEY_HERE"
+       }
+     }
+     ```
 
-2. **Run the program**
+4. **Run the program**
    click run or f5
